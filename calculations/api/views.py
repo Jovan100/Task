@@ -3,8 +3,7 @@ from calculations.api.serializers import CalculationsSerializer
 from calculations.models import Calculations
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
-import array as arr
-
+from rest_framework.permissions import IsAdminUser
 class AddView(ViewSet):
     def add(self, request, numbers):
         if isinstance(request.data['num'], int):
@@ -75,6 +74,11 @@ class ResetView(ViewSet):
             return Response(data=message, status=400)
 
 class HistoryView(ViewSet):
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [IsAdminUser]
+        return [permission() for permission in permission_classes]
+
     def retrieve(self, request, pk=None, **kwargs):
         queryset = Calculations.objects.all()
         history = get_object_or_404(queryset, pk=pk)
