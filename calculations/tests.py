@@ -19,8 +19,8 @@ class CalculationsTestCase(APITestCase):
                                         password=self.password,
                                         is_staff=True,
                                         is_admin=True)
-        self.data1 = {"num": "1, 2, 3"}
-        self.sum1 = sum(int(x) for x in self.data1['num'].split(','))
+        self.data1 = {"num": [1, 2, 3]}
+        self.sum1 = sum(self.data1['num'])
         self.data2 = {"num": "4, 5, 6"}
         self.sum2 = self.sum1 + sum(int(x) for x in self.data2['num'].split(','))
         self.client.force_authenticate(user=self.user)
@@ -30,6 +30,11 @@ class CalculationsTestCase(APITestCase):
         response = self.client.post('/add/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_add_list_authenticated(self):
+        response = self.client.post('/add/', self.data1, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data, self.data1['num'])
+
     def test_add_number_string_authenticated(self):
         data = {"num": "1, 2, 3"}
         response = self.client.post('/add/', data)
@@ -38,17 +43,17 @@ class CalculationsTestCase(APITestCase):
 
     def test_add_number_unauthenticated(self):
         self.client.force_authenticate(user=None)
-        response = self.client.post('/add/', self.data1)
+        response = self.client.post('/add/', self.data1, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_calculate_authenticated(self):
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         response = self.client.get(reverse("calculate"))
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data, self.sum1)
 
     def test_all_calculations_authenticated(self):
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
@@ -61,18 +66,18 @@ class CalculationsTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_bad_all_calculations(self):
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         response = self.client.get(reverse("calculate", kwargs={"all": "test"}))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_calculate_unauthenticated(self):
         self.client.force_authenticate(user=None)
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         response = self.client.get(reverse("calculate"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_reset_authenticated(self):
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
@@ -88,13 +93,13 @@ class CalculationsTestCase(APITestCase):
 
     def test_reset_unauthenticated(self):
         self.client.force_authenticate(user=None)
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("reset"))
         response = self.client.post(reverse("reset"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_history_retrieve_authenticated(self):
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
@@ -107,7 +112,7 @@ class CalculationsTestCase(APITestCase):
 
     def test_history_retrieve_unauthenticated(self):
         self.client.force_authenticate(user=None)
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post(reverse("reset"))
         response = self.client.get(reverse("history", kwargs={"pk": 1}))
@@ -115,12 +120,12 @@ class CalculationsTestCase(APITestCase):
 
     def test_history_list_admin_authenticated(self):
         self.client.force_authenticate(user=self.admin)
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
         test_calc1 = self.client.post(reverse("reset"))
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
@@ -134,12 +139,12 @@ class CalculationsTestCase(APITestCase):
         self.assertEqual(response.data, [serialized1.data, serialized2.data])
 
     def test_history_list_user_unauthenticated(self):
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
         self.client.post(reverse("reset"))
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
@@ -149,12 +154,12 @@ class CalculationsTestCase(APITestCase):
 
     def test_history_list_unauthenticated(self):
         self.client.force_authenticate(user=None)
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
         self.client.post(reverse("reset"))
-        self.client.post('/add/', self.data1)
+        self.client.post('/add/', self.data1, format='json')
         self.client.get(reverse("calculate"))
         self.client.post('/add/', self.data2)
         self.client.get(reverse("calculate"))
