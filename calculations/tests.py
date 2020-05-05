@@ -41,6 +41,11 @@ class CalculationsTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data, [int(x) for x in data['num'].split(',')])
 
+    def test_add_bad_string(self):
+        data = {'num': 'test'}
+        response = self.client.post('/add/', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_add_number_unauthenticated(self):
         self.client.force_authenticate(user=None)
         response = self.client.post('/add/', self.data1, format='json')

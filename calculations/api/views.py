@@ -6,27 +6,34 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework import status
 
-class AddView(ViewSet):
 
-    def add(self, request, numbers):
+class AddView(ViewSet):
+    def add(self, request, numbers, valid):
         if isinstance(request.data['num'], list):
             numbers.extend(request.data['num'])
         elif isinstance(request.data['num'], int):
             numbers.append(request.data['num'])
         elif isinstance(request.data['num'], str):
-            nums = [int(x) for x in request.data['num'].split(',')]
-            numbers.extend(nums)
+            try:
+                nums = [int(x) for x in request.data['num'].split(',')]
+                numbers.extend(nums)
+            except ValueError:
+                valid[0] = False
         request.session['numbers'] = numbers
 
     def create(self, request, *args, **kwargs):
+        valid = [True]
         try:
             numbers = request.session['numbers']
-            self.add(request, numbers)
+            self.add(request, numbers, valid)
         except KeyError:
             numbers = []
-            self.add(request, numbers)
+            self.add(request, numbers, valid)
 
-        return Response(data=request.session['numbers'], status=status.HTTP_201_CREATED)
+        if valid[0]:
+            return Response(data=request.session['numbers'], status=status.HTTP_201_CREATED)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class CalculateView(ViewSet):
@@ -56,6 +63,7 @@ class CalculateView(ViewSet):
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
+
 class ResetView(ViewSet):
     def create(self, request, *args, **kwargs):
         try:
@@ -76,6 +84,7 @@ class ResetView(ViewSet):
         except KeyError:
             message = 'There are no numbers to add.'
             return Response(data=message, status=status.HTTP_400_BAD_REQUEST)
+
 
 class HistoryView(ViewSet):
     def get_permissions(self):
