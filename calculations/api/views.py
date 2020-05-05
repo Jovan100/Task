@@ -9,7 +9,9 @@ from rest_framework import status
 class AddView(ViewSet):
 
     def add(self, request, numbers):
-        if isinstance(request.data['num'], int):
+        if isinstance(request.data['num'], list):
+            numbers.extend(request.data['num'])
+        elif isinstance(request.data['num'], int):
             numbers.append(request.data['num'])
         elif isinstance(request.data['num'], str):
             nums = [int(x) for x in request.data['num'].split(',')]
