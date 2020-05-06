@@ -26,20 +26,17 @@ class CalculationsTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_add_number_int_authenticated(self):
-        data = {"num": 1}
-        response = self.client.post('/add/', data)
+        response = self.client.post('/add/', 1, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_add_list_authenticated(self):
         response = self.client.post('/add/', self.data1, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data, self.data1['num'])
 
     def test_add_number_string_authenticated(self):
         data = {"num": "1, 2, 3"}
         response = self.client.post('/add/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data, [int(x) for x in data['num'].split(',')])
 
     def test_add_bad_string(self):
         data = {'num': 'test'}
@@ -171,3 +168,23 @@ class CalculationsTestCase(APITestCase):
         self.client.post(reverse("reset"))
         response = self.client.get(reverse("history"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_flow(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post('/add/', 16, content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        response = self.client.post('/add/', 20, content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        response = self.client.get(reverse("calculate"))
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data, 36)
+        response = self.client.post('/add/', {"num": [4, 10]})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        response = self.client.post(reverse("reset"))
+        calculation = Calculations.objects.get(pk=response.data['id'])
+        serialized = CalculationsSerializer(calculation)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data, serialized.data)
+        response = self.client.get(reverse("history"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], serialized.data)

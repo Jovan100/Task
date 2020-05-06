@@ -9,10 +9,10 @@ from rest_framework import status
 
 class AddView(ViewSet):
     def add(self, request, numbers, valid):
-        if isinstance(request.data['num'], list):
+        if isinstance(request.data, int):
+            numbers.append(request.data)
+        elif isinstance(request.data['num'], list):
             numbers.extend(request.data['num'])
-        elif isinstance(request.data['num'], int):
-            numbers.append(request.data['num'])
         elif isinstance(request.data['num'], str):
             try:
                 nums = [int(x) for x in request.data['num'].split(',')]
@@ -31,7 +31,7 @@ class AddView(ViewSet):
             self.add(request, numbers, valid)
 
         if valid[0]:
-            return Response(data=request.session['numbers'], status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_201_CREATED)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 

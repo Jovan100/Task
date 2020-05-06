@@ -23,4 +23,4 @@ class Command(BaseCommand):
             if 'ir' in arguments:
                 os.system('pip install -r requirements.txt')
         except TypeError:
-            call_command('runserver', '127.0.0.1:7373')
+            call_command('runserver', '127.0.0.1:6767')
